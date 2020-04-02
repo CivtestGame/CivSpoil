@@ -11,20 +11,18 @@ local function dump(o)
     end
  end
 
-local spoil_time = 0.5 -- Arbitraty number for now
-
-
 local function apply_spoil(inv_list)
     for _, itemstack in pairs(inv_list) do
         if not itemstack:is_empty() then
             local groups = itemstack:get_definition().groups
-            if groups["food_wheat"] then --replace with all food check
+            if groups["spoils"] then --replace with all food check
+                local spoil_time = groups["spoils"]
                 local meta = itemstack:get_meta()
                 if meta:get("spoil_start") then
                     local spoil_start = meta:get_int("spoil_start")
                     local time = os.time()
                     local diff = time-spoil_start
-                    local pct_spoiled = (diff/(spoil_time*60)*100)
+                    local pct_spoiled = (diff/(spoil_time*60*60*24)*100)
                     if pct_spoiled >= 100 then
                         itemstack:clear()
                     else
@@ -51,9 +49,16 @@ local function check_player_inventories()
     minetest.after(5, check_player_inventories)
 end
 
-minetest.register_craftitem("civspoil:Test", {
-    description = "Testing description 10% \nTesting multiline"
-})
-
+--Hook 1: Check every 60 seconds
 check_player_inventories()
 
+--Hook 2: Check on player join
+minetest.register_on_joinplayer(function(player)
+    local inv = player:get_inventory()
+    local main = inv:get_list("main")
+    --local main2 = inv:get_list("main2")
+    inv:set_list("main",apply_spoil(main))
+    --apply_spoil(main2)
+end)
+
+--Hook 3: Chest hook?
