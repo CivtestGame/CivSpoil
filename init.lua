@@ -18,19 +18,22 @@ local function apply_spoil(inv_list)
             if groups["spoils"] then --replace with all food check
                 local spoil_time = groups["spoils"]
                 local meta = itemstack:get_meta()
-                if meta:get("spoil_start") then
-                    local spoil_start = meta:get_int("spoil_start")
-                    local time = os.time()
-                    local diff = time-spoil_start
-                    local pct_spoiled = (diff/(spoil_time*60*60*24)*100)
-                    if pct_spoiled >= 100 then
-                        itemstack:clear()
-                    else
-                        local new_description = ("%s\n%.0f%%%s"):format(itemstack:get_definition().description, pct_spoiled, " spoiled")
-                        meta:set_string("description", new_description)
-                    end
+                if not meta:get("spoil_start") then
+                    local round_factor = 60*60 --One hour
+                    local rounded_time = (math.floor(os.time()/round_factor + 0.5)*round_factor)
+                    minetest.debug(rounded_time)
+                    meta:set_int("spoil_start", rounded_time)
+                end
+                local spoil_start = meta:get_int("spoil_start")
+                local time = os.time()
+                local diff = time-spoil_start
+                local pct_spoiled = (diff/(spoil_time*60*60*24)*100)
+                if pct_spoiled < 0 then pct_spoiled = 0 end
+                if pct_spoiled >= 100 then
+                    itemstack:clear()
                 else
-                    meta:set_int("spoil_start", os.time())
+                    local new_description = ("%s\n%.0f%%%s"):format(itemstack:get_definition().description, pct_spoiled, " spoiled")
+                    meta:set_string("description", new_description)
                 end
             end
         end
